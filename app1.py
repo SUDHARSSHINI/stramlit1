@@ -31,48 +31,51 @@ model.fit(X_train, y_train)
 # Predict and calculate accuracy
 y_pred = model.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
+st.write(f'Accuracy: {accuracy:.2f}')
 
-# Define a function to predict churn from user input using Streamlit
+# Define a function to predict churn from user input
 def predict_churn_from_input():
-    st.title("Churn Prediction App")
+    st.title("Customer Churn Prediction")
+    
+    # Get user input for each feature using Streamlit's widgets
+    credit_score = st.number_input("Enter the customer's credit score (300-850):", min_value=300, max_value=850, step=1)
+    geography = st.selectbox("Enter the customer's geography:", ['France', 'Germany', 'Spain'])
+    gender = st.selectbox("Enter the customer's gender:", ['Male', 'Female'])
+    age = st.number_input("Enter the customer's age (18-100):", min_value=18, max_value=100, step=1)
+    tenure = st.number_input("Enter the customer's tenure (in years, 0-10):", min_value=0, max_value=10, step=1)
+    balance = st.number_input("Enter the customer's account balance:")
+    num_of_products = st.number_input("Enter the number of bank products used by the customer (1-4):", min_value=1, max_value=4, step=1)
+    has_cr_card = st.radio("Does the customer have a credit card?", (1, 0))
+    is_active_member = st.radio("Is the customer an active member?", (1, 0))
+    estimated_salary = st.number_input("Enter the customer's estimated salary:")
 
-    st.write(f"Model Accuracy: {accuracy:.2f}")
+    # When the user clicks the "Predict" button
+    if st.button('Predict'):
+        # Create a DataFrame from the user input
+        input_data = pd.DataFrame({
+            'CreditScore': [credit_score],
+            'Geography': [geography],
+            'Gender': [gender],
+            'Age': [age],
+            'Tenure': [tenure],
+            'Balance': [balance],
+            'NumOfProducts': [num_of_products],
+            'HasCrCard': [has_cr_card],
+            'IsActiveMember': [is_active_member],
+            'EstimatedSalary': [estimated_salary]
+        })
 
-    credit_score = st.number_input("Enter the customer's credit score:", min_value=300, max_value=900, value=650)
-    geography = st.selectbox("Enter the customer's geography:", ('France', 'Germany', 'Spain'))
-    gender = st.selectbox("Enter the customer's gender:", ('Male', 'Female'))
-    age = st.number_input("Enter the customer's age:", min_value=18, max_value=100, value=30)
-    tenure = st.number_input("Enter the customer's tenure (in years):", min_value=0, max_value=10, value=3)
-    balance = st.number_input("Enter the customer's account balance:", min_value=0.0, value=10000.0)
-    num_of_products = st.number_input("Enter the number of bank products used by the customer:", min_value=1, max_value=4, value=1)
-    has_cr_card = st.selectbox("Does the customer have a credit card?", (1, 0))
-    is_active_member = st.selectbox("Is the customer an active member?", (1, 0))
-    estimated_salary = st.number_input("Enter the customer's estimated salary:", min_value=0.0, value=50000.0)
+        # Convert input data to the same format as training data
+        input_data = pd.get_dummies(input_data, columns=['Geography', 'Gender'], drop_first=True)
+        input_data = input_data.reindex(columns=X.columns, fill_value=0)
+        input_features = sc.transform(input_data)
 
-    input_data = pd.DataFrame({
-        'CreditScore': [credit_score],
-        'Geography': [geography],
-        'Gender': [gender],
-        'Age': [age],
-        'Tenure': [tenure],
-        'Balance': [balance],
-        'NumOfProducts': [num_of_products],
-        'HasCrCard': [has_cr_card],
-        'IsActiveMember': [is_active_member],
-        'EstimatedSalary': [estimated_salary]
-    })
+        # Predict churn
+        churn_prediction = model.predict(input_features)
+        churn_prediction_human_readable = np.where(churn_prediction == 1, 'Churn', 'No Churn')
 
-    # Convert input data to the same format as training data
-    input_data = pd.get_dummies(input_data, columns=['Geography', 'Gender'], drop_first=True)
-    input_data = input_data.reindex(columns=X.columns, fill_value=0)
-    input_features = sc.transform(input_data)
+        # Display the prediction
+        st.write(f"The predicted churn status for the customer is: {churn_prediction_human_readable[0]}")
 
-    # Predict churn
-    churn_prediction = model.predict(input_features)
-    churn_prediction_human_readable = np.where(churn_prediction == 1, 'Churn', 'No Churn')
-
-    st.write(f"The predicted churn status for the customer is: {churn_prediction_human_readable[0]}")
-
-# Run the Streamlit app
-if __name__ == '__main__':
-    predict_churn_from_input()
+# Call the function to test
+predict_churn_from_input()
